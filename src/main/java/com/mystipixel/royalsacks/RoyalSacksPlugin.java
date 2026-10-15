@@ -7,6 +7,7 @@ import com.mystipixel.royalsacks.command.SacksCommand;
 import com.mystipixel.royalsacks.gui.SackHolder;
 import com.mystipixel.royalsacks.gui.SackMenu;
 import com.mystipixel.royalsacks.gui.SackMenuListener;
+import com.mystipixel.royalsacks.hooks.SacksExpansion;
 import com.mystipixel.royalsacks.hooks.SkyblockSave;
 import com.mystipixel.royalsacks.hooks.VaultHook;
 import com.mystipixel.royalsacks.item.ItemMatcher;
@@ -46,6 +47,8 @@ public final class RoyalSacksPlugin extends JavaPlugin {
     private SackService service;
     private SackMenu menu;
     private BukkitTask flushTask;
+    // typed as Object so this class loads without PlaceholderAPI
+    private Object expansion;
 
     @Override
     public void onEnable() {
@@ -82,7 +85,9 @@ public final class RoyalSacksPlugin extends JavaPlugin {
         getCommand("sacks").setExecutor(command);
         getCommand("sacks").setTabCompleter(command);
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            new com.mystipixel.royalsacks.hooks.SacksExpansion(service, getPluginMeta().getVersion()).register();
+            SacksExpansion placeholders = new SacksExpansion(service, getPluginMeta().getVersion());
+            placeholders.register();
+            this.expansion = placeholders;
         }
         SacksApi.bind(service);
 
@@ -101,14 +106,16 @@ public final class RoyalSacksPlugin extends JavaPlugin {
             flushTask.cancel();
         }
         for (Player player : getServer().getOnlinePlayers()) {
-            if (player.getOpenInventory().getTopInventory().getHolder() instanceof SackHolder) {
+            if (player.getOpenInventory().getTopInventory().getHolder(false) instanceof SackHolder) {
                 player.closeInventory();
             }
         }
-        if (service != null) {
-            service.shutdown();
+        if (expansion != null) {
+            ((SacksExpansion) expansion).unregister();
         }
-        if (db != null) {
+        if (service != null) {
+            service.shutdown(Duration.ofSeconds(10));
+        } else if (db != null) {
             db.shutdown(Duration.ofSeconds(10));
         }
         if (storage != null) {

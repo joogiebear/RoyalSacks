@@ -2,6 +2,7 @@ package com.mystipixel.royalsacks.scope;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
 import java.util.Locale;
 
@@ -11,7 +12,8 @@ import java.util.Locale;
  *
  * <p>In per-profile mode an unresolved placeholder yields {@code null}, never {@link #GLOBAL}: the global
  * sacks are shared by every profile, so falling back to them would move items between profiles. Per-profile
- * mode stays latched once the expansion has been seen, until a restart.
+ * mode starts as soon as the plugin that owns the expansion is enabled (before it has registered the
+ * expansion) and stays latched once the expansion has been seen, until a restart.
  */
 public final class ScopeResolver {
 
@@ -59,7 +61,20 @@ public final class ScopeResolver {
      */
     public boolean perProfile() {
         seenExpansion = perProfile(registered(), seenExpansion);
-        return seenExpansion;
+        return seenExpansion || ownerEnabled();
+    }
+
+    // RoyalSkyblock is enabled but hasn't registered %royalskyblock_...% yet: still per profile
+    private boolean ownerEnabled() {
+        if (!placeholderApi || expansion == null) {
+            return false;
+        }
+        for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
+            if (plugin.isEnabled() && plugin.getName().toLowerCase(Locale.ROOT).equals(expansion)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static boolean perProfile(boolean registeredNow, boolean seenBefore) {

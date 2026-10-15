@@ -16,10 +16,14 @@ import org.bukkit.inventory.PlayerInventory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.time.Duration;
+import java.sql.SQLException;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -35,6 +39,8 @@ import java.util.logging.Logger;
 public final class SackService {
 
     public enum Withdraw { STACK, FILL }
+
+    private static final long LOAD_RETRY_MILLIS = 5000;
 
     public record Settings(boolean pickupByDefault, boolean notifyActionBar, long fullWarnMillis) {
     }
@@ -57,6 +63,20 @@ public final class SackService {
     private final Map<UUID, Long> picked = new HashMap<>();
     private final Map<String, Long> fullWarned = new HashMap<>();
     private final BusyGuard<UUID> busy = new BusyGuard<>();
+    // writes handed to the database thread and not yet confirmed, by sequence; a load counts those queued after it
+    private final Map<Long, Unconfirmed> unconfirmed = new LinkedHashMap<>();
+    private long writeSeq;
+    private final Map<SackKey, Long> loadFailedAt = new HashMap<>();
+    // withdrawals and upgrades whose database result hasn't been acted on yet; finished in shutdown() if need be
+    private final Map<Long, Finisher> finishing = new LinkedHashMap<>();
+    private long finishSeq;
+    private boolean closing;
+
+    private record Unconfirmed(List<SackStorage.Delta> deltas, CompletableFuture<Void> result) {
+    }
+
+    private record Finisher(CompletableFuture<Boolean> result, BiConsumer<Boolean, Throwable> finish) {
+    }
 
     public SackService(DbExecutor db, SackStorage storage, MessageManager messages, VaultHook vault, SkyblockSave skyblock,
                        Logger log, Supplier<ScopeResolver> scopes) {
@@ -102,7 +122,11 @@ public final class SackService {
         UUID id = player.getUniqueId();
         boolean fallback = settings.pickupByDefault();
         db.submit("pickup setting " + id, () -> storage.pickupEnabled(id, fallback))
-                .thenAcceptAsync(on -> pickup.put(id, on), db.mainThread());
+                .thenAcceptAsync(on -> {
+                    if (Bukkit.getPlayer(id) != null) {
+                        pickup.putIfAbsent(id, on);
+                    }
+                }, db.mainThread());
         SackKey key = keyFor(player);
         if (key != null) {
             load(key);
@@ -128,22 +152,52 @@ public final class SackService {
 
     /** Reads the key's sacks from the database (writing anything pending first). Completes on the main thread. */
     public CompletableFuture<SackState> load(SackKey key) {
+        if (closing) {
+            return CompletableFuture.failedFuture(new IllegalStateException("RoyalSacks is shutting down"));
+        }
         CompletableFuture<SackState> inFlight = loading.get(key);
         if (inFlight != null) {
             return inFlight;
         }
         write(pending.drain(key));
+        long readAfter = writeSeq;
         CompletableFuture<SackState> future = db.submit("load " + key, () -> storage.load(key.owner(), key.scope()))
                 .thenApplyAsync(snapshot -> {
                     SackState state = new SackState(snapshot.contents(), snapshot.tiers());
-                    // picked up after the read was queued
+                    // changes made after the read was queued: still pending, or written but not confirmed yet
                     pending.of(key).forEach(state::add);
-                    states.put(key, state);
+                    unconfirmed.forEach((seq, write) -> {
+                        if (seq > readAfter) {
+                            for (SackStorage.Delta d : write.deltas()) {
+                                if (d.owner().equals(key.owner()) && d.scope().equals(key.scope())) {
+                                    state.add(d.itemId(), d.qty());
+                                }
+                            }
+                        }
+                    });
+                    if (Bukkit.getPlayer(key.owner()) != null) {
+                        states.put(key, state);
+                    }
                     return state;
                 }, db.mainThread());
         loading.put(key, future);
-        future.whenCompleteAsync((state, error) -> loading.remove(key, future), db.mainThread());
+        future.whenCompleteAsync((state, error) -> {
+            loading.remove(key, future);
+            if (error != null) {
+                loadFailedAt.put(key, System.currentTimeMillis());
+            } else {
+                loadFailedAt.remove(key);
+            }
+        }, db.mainThread());
         return future;
+    }
+
+    // pickups ask for a load on every matched item; after a failure, wait before asking the database again
+    private void loadSoon(SackKey key) {
+        Long failed = loadFailedAt.get(key);
+        if (failed == null || System.currentTimeMillis() - failed > LOAD_RETRY_MILLIS) {
+            load(key);
+        }
     }
 
     public boolean pickupEnabled(Player player) {
@@ -182,7 +236,7 @@ public final class SackService {
         }
         SackState state = states.get(key);
         if (state == null) {
-            load(key);
+            loadSoon(key);
             return 0;
         }
         long room = state.room(sack, itemId);
@@ -235,10 +289,18 @@ public final class SackService {
         if (deltas.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
-        return db.submit("write " + deltas.size() + " sack changes", () -> {
+        if (closing) {
+            pending.restore(deltas);
+            return CompletableFuture.completedFuture(null);
+        }
+        long seq = ++writeSeq;
+        CompletableFuture<Void> result = db.submit("write " + deltas.size() + " sack changes", () -> {
             storage.apply(deltas);
             return null;
-        }).whenCompleteAsync((ok, error) -> {
+        });
+        unconfirmed.put(seq, new Unconfirmed(deltas, result));
+        return result.whenCompleteAsync((ok, error) -> {
+            unconfirmed.remove(seq);
             if (error != null) {
                 log.log(Level.WARNING, "Could not write " + deltas.size() + " sack changes; retrying with the next flush", error);
                 pending.restore(deltas);
@@ -276,25 +338,37 @@ public final class SackService {
             return;
         }
         write(pending.drain(key));
-        db.submit("withdraw " + want + " " + itemId + " for " + key, () -> storage.withdraw(key.owner(), key.scope(), itemId, want))
-                .whenCompleteAsync((taken, error) -> {
-                    busy.exit(id);
-                    if (error != null) {
-                        messages.send(player, "failed");
-                        return;
-                    }
-                    if (!taken) {
-                        messages.send(player, "changed");
-                        load(key).thenRun(refresh);
-                        return;
-                    }
-                    SackState current = states.get(key);
-                    if (current != null) {
-                        current.add(itemId, -want);
-                    }
-                    hand(player, key, itemId, want);
-                    refresh.run();
-                }, db.mainThread());
+        track(db.submit("withdraw " + want + " " + itemId + " for " + key,
+                () -> storage.withdraw(key.owner(), key.scope(), itemId, want)), (taken, error) -> {
+            busy.exit(id);
+            if (error != null) {
+                messages.send(player, "failed");
+                return;
+            }
+            if (!taken) {
+                messages.send(player, "changed");
+                load(key).thenRun(refresh);
+                return;
+            }
+            SackState current = states.get(key);
+            if (current != null) {
+                current.add(itemId, -want);
+            }
+            hand(player, key, itemId, want);
+            refresh.run();
+        });
+    }
+
+    // runs finish on the main thread when the database answers, or from shutdown() if the plugin is disabled first
+    private void track(CompletableFuture<Boolean> result, BiConsumer<Boolean, Throwable> finish) {
+        long seq = ++finishSeq;
+        finishing.put(seq, new Finisher(result, finish));
+        result.whenCompleteAsync((value, error) -> {
+            Finisher f = finishing.remove(seq);
+            if (f != null) {
+                f.finish().accept(value, error);
+            }
+        }, db.mainThread());
     }
 
     // gives items the database already took out; whatever can't be given goes back into the sack
@@ -307,6 +381,11 @@ public final class SackService {
         long overflow = 0;
         while (left > 0) {
             ItemStack stack = matcher.create(itemId, (int) Math.min(left, Integer.MAX_VALUE));
+            if (stack == null) {
+                // removed from the config by a reload meanwhile
+                overflow += left;
+                break;
+            }
             left -= stack.getAmount();
             for (ItemStack rest : player.getInventory().addItem(stack).values()) {
                 overflow += rest.getAmount();
@@ -372,47 +451,55 @@ public final class SackService {
             taken.addAll(matcher.take(player, cost.itemId(), cost.amount()));
         }
         if (next.coins() > 0 && !vault.withdraw(player, next.coins())) {
-            giveBack(player, taken);
+            giveBack(player, key, taken);
             busy.exit(id);
             messages.send(player, "need-coins", Map.of("cost", vault.format(next.coins())));
             return;
         }
         int target = current + 1;
-        db.submit("upgrade " + sackId + " to " + target + " for " + key,
-                        () -> storage.upgrade(key.owner(), key.scope(), sackId, stored, target))
-                .whenCompleteAsync((ok, error) -> {
-                    busy.exit(id);
-                    if (error == null && ok) {
-                        SackState now = states.get(key);
-                        if (now != null) {
-                            now.setTier(sackId, target);
-                        }
-                        skyblock.save(id);
-                        messages.send(player, "upgraded", Map.of("sack", sack.display(),
-                                "tier", next.display(), "capacity", String.format("%,d", next.capacity())));
-                        refresh.run();
-                        return;
-                    }
-                    if (next.coins() > 0) {
-                        vault.deposit(player, next.coins());
-                    }
-                    giveBack(player, taken);
-                    messages.send(player, error == null ? "changed" : "failed");
-                    load(key).thenRun(refresh);
-                }, db.mainThread());
+        track(db.submit("upgrade " + sackId + " to " + target + " for " + key,
+                () -> storage.upgrade(key.owner(), key.scope(), sackId, stored, target)), (ok, error) -> {
+            busy.exit(id);
+            if (error == null && ok) {
+                SackState now = states.get(key);
+                if (now != null) {
+                    now.setTier(sackId, target);
+                }
+                messages.send(player, "upgraded", Map.of("sack", sack.display(),
+                        "tier", next.display(), "capacity", String.format("%,d", next.capacity())));
+                refresh.run();
+                return;
+            }
+            if (next.coins() > 0) {
+                vault.deposit(player, next.coins());
+            }
+            giveBack(player, key, taken);
+            messages.send(player, error == null ? "changed" : "failed");
+            load(key).thenRun(refresh);
+        });
     }
 
-    // refunds items taken for a failed purchase; drops what doesn't fit at the player's feet
-    private void giveBack(Player player, List<ItemStack> items) {
+    // refunds items taken for a failed purchase into the inventory they came from, or else into the paying
+    // profile's sack; only items no sack holds can't be returned, and those are logged for an admin
+    private void giveBack(Player player, SackKey key, List<ItemStack> items) {
         if (items.isEmpty()) {
             return;
         }
-        if (!player.isOnline()) {
-            log.severe("Could not refund " + items + " to " + player.getName() + ", who left before the sack upgrade failed.");
+        if (player.isOnline() && key.equals(keyFor(player))) {
+            for (ItemStack rest : player.getInventory().addItem(items.toArray(new ItemStack[0])).values()) {
+                player.getWorld().dropItemNaturally(player.getLocation(), rest);
+            }
+            skyblock.save(player.getUniqueId());
             return;
         }
-        for (ItemStack rest : player.getInventory().addItem(items.toArray(new ItemStack[0])).values()) {
-            player.getWorld().dropItemNaturally(player.getLocation(), rest);
+        for (ItemStack item : items) {
+            String itemId = matcher.idOf(item);
+            if (itemId != null && registry.sackOf(itemId) != null) {
+                returnToSack(key, itemId, item.getAmount());
+            } else {
+                log.severe("Could not refund " + item + " to " + player.getName() + " (" + key.scope()
+                        + "): they left or switched profile before the sack upgrade failed.");
+            }
         }
     }
 
@@ -445,14 +532,38 @@ public final class SackService {
                 }, db.mainThread());
     }
 
-    /** Writes everything pending and waits for the database thread. For onDisable. */
-    public void shutdown() {
-        List<SackStorage.Delta> left = pending.drainAll();
-        if (!left.isEmpty()) {
-            db.submit("final sack write", () -> {
-                storage.apply(left);
-                return null;
-            });
+    /**
+     * Writes everything pending, drains the database thread, then finishes withdrawals and upgrades whose
+     * main-thread callback the disabled plugin can no longer run. For onDisable, on the main thread.
+     */
+    public void shutdown(Duration timeout) {
+        write(pending.drainAll());
+        db.shutdown(timeout);
+        closing = true;
+        List<Finisher> left = new ArrayList<>(finishing.values());
+        finishing.clear();
+        for (Finisher f : left) {
+            CompletableFuture<Boolean> result = f.result();
+            if (result.isDone() && !result.isCompletedExceptionally()) {
+                f.finish().accept(result.join(), null);
+            } else {
+                f.finish().accept(null, new IllegalStateException("not run before shutdown"));
+            }
+        }
+        // items handed back by the finishers above, and writes that failed or were cancelled by the drain
+        List<SackStorage.Delta> rest = pending.drainAll();
+        for (Unconfirmed write : unconfirmed.values()) {
+            if (write.result().isCompletedExceptionally()) {
+                rest.addAll(write.deltas());
+            }
+        }
+        unconfirmed.clear();
+        if (!rest.isEmpty()) {
+            try {
+                storage.apply(rest);
+            } catch (SQLException e) {
+                log.log(Level.SEVERE, "Could not write sack changes at shutdown; these are lost: " + rest, e);
+            }
         }
     }
 

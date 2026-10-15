@@ -21,6 +21,7 @@ commands:
     description: Open your sacks.
     usage: /sacks [pickup [on|off]|reload|admin <give|take|view> <player> [item] [amount]]
     aliases: [sack]
+    permission: royalsacks.use
 permissions:
   royalsacks.use:
     description: Open and use sacks.

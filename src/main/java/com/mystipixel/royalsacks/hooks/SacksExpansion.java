@@ -6,13 +6,15 @@ import com.mystipixel.royalsacks.sack.SackRegistry;
 import com.mystipixel.royalsacks.sack.SackService;
 import com.mystipixel.royalsacks.sack.SackState;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
+import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 /**
  * {@code %royalsacks_amount_<item>%}, {@code %royalsacks_capacity_<item>%}, {@code %royalsacks_tier_<sack>%},
- * {@code %royalsacks_stored_<sack>%} and {@code %royalsacks_pickup%}, for online players. Item ids keep their
- * namespace: {@code %royalsacks_amount_ecoitems:enchanted_wheat%}. Only loaded when PlaceholderAPI is.
+ * {@code %royalsacks_stored_<sack>%} and {@code %royalsacks_pickup%}, for online players on the main thread.
+ * Item ids keep their namespace: {@code %royalsacks_amount_ecoitems:enchanted_wheat%}. Only loaded when
+ * PlaceholderAPI is.
  */
 public final class SacksExpansion extends PlaceholderExpansion {
 
@@ -40,13 +42,14 @@ public final class SacksExpansion extends PlaceholderExpansion {
     }
 
     @Override
-    public boolean persist() {
-        return true;
+    public String getRequiredPlugin() {
+        return "RoyalSacks";
     }
 
     @Override
     public String onRequest(OfflinePlayer offline, String params) {
-        if (!(offline instanceof Player player) || !player.isOnline()) {
+        // the sack state lives on the main thread
+        if (!Bukkit.isPrimaryThread() || !(offline instanceof Player player) || !player.isOnline()) {
             return "";
         }
         if (params.equals("pickup")) {

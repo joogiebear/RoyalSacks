@@ -23,7 +23,8 @@ public final class PickupListener implements Listener {
     // HIGHEST, after protection and anything else that may cancel the pickup; a cancelled one is never stored
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPickup(EntityPickupItemEvent event) {
-        if (!(event.getEntity() instanceof Player player) || player.getGameMode() == GameMode.SPECTATOR) {
+        if (!(event.getEntity() instanceof Player player) || player.getGameMode() == GameMode.SPECTATOR
+                || !player.hasPermission("royalsacks.use")) {
             return;
         }
         Item entity = event.getItem();

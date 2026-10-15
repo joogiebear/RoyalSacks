@@ -49,8 +49,13 @@ public final class SackMenu {
             messages.send(player, "no-profile");
             return;
         }
-        service.load(key).thenAccept(state -> {
-            if (player.isOnline() && key.equals(service.keyFor(player))) {
+        service.load(key).whenComplete((state, error) -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            if (error != null) {
+                messages.send(player, "failed");
+            } else if (key.equals(service.keyFor(player))) {
                 showMain(player, key, state);
             }
         });
@@ -68,7 +73,7 @@ public final class SackMenu {
 
     /** Redraws whatever sacks menu the player has open, from the current state. */
     public void refresh(Player player) {
-        if (!(player.getOpenInventory().getTopInventory().getHolder() instanceof SackHolder holder)) {
+        if (!(player.getOpenInventory().getTopInventory().getHolder(false) instanceof SackHolder holder)) {
             return;
         }
         SackState state = service.state(holder.key());
@@ -86,7 +91,7 @@ public final class SackMenu {
         ConfigurationSection cfg = section("main");
         SackHolder holder = new SackHolder(key, null, 0);
         Inventory inv = create(holder, cfg, Map.of());
-        List<Integer> slots = cfg.getIntegerList("sack-slots");
+        List<Integer> slots = inside(cfg.getIntegerList("sack-slots"), inv.getSize());
         int i = 0;
         for (SackDefinition sack : service.registry().all()) {
             if (i >= slots.size()) {
@@ -118,7 +123,7 @@ public final class SackMenu {
             return;
         }
         ConfigurationSection cfg = section("sack");
-        List<Integer> slots = cfg.getIntegerList("item-slots");
+        List<Integer> slots = inside(cfg.getIntegerList("item-slots"), Math.max(1, Math.min(6, cfg.getInt("rows", 6))) * 9);
         int perPage = Math.max(1, slots.size());
         int pages = Math.max(1, (sack.items().size() + perPage - 1) / perPage);
         page = Math.max(0, Math.min(page, pages - 1));
@@ -172,6 +177,11 @@ public final class SackMenu {
         }
         button(inv, holder, cfg, "back", new SackHolder.Back(), Map.of());
         player.openInventory(inv);
+    }
+
+    // slots outside the menu are dropped rather than failing every open
+    static List<Integer> inside(List<Integer> slots, int size) {
+        return slots.stream().filter(slot -> slot >= 0 && slot < size).toList();
     }
 
     private Inventory create(SackHolder holder, ConfigurationSection cfg, Map<String, String> values) {

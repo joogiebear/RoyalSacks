@@ -30,13 +30,13 @@ public final class SackMenuListener implements Listener {
     // HIGHEST so no later listener un-cancels a click into the menu
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onClick(InventoryClickEvent event) {
-        if (!(event.getInventory().getHolder() instanceof SackHolder holder)) {
+        if (!(event.getInventory().getHolder(false) instanceof SackHolder holder)) {
             return;
         }
         event.setCancelled(true);
         if (!(event.getWhoClicked() instanceof Player player)
                 || event.getClickedInventory() == null
-                || !(event.getClickedInventory().getHolder() instanceof SackHolder)
+                || !(event.getClickedInventory().getHolder(false) instanceof SackHolder)
                 || event.getAction() == InventoryAction.NOTHING) {
             return;
         }
@@ -55,7 +55,7 @@ public final class SackMenuListener implements Listener {
     }
 
     private void act(Player player, SackHolder holder, SackHolder.Action action, ClickType click) {
-        if (player.getOpenInventory().getTopInventory().getHolder() != holder) {
+        if (player.getOpenInventory().getTopInventory().getHolder(false) != holder) {
             return;
         }
         switch (action) {
@@ -80,7 +80,7 @@ public final class SackMenuListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDrag(InventoryDragEvent event) {
-        if (event.getInventory().getHolder() instanceof SackHolder) {
+        if (event.getInventory().getHolder(false) instanceof SackHolder) {
             event.setCancelled(true);
         }
     }
