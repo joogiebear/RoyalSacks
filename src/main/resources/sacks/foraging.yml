@@ -1,0 +1,27 @@
+display: "&2Foraging Sack"
+icon: oak_log
+items:
+  - oak_log
+  - spruce_log
+  - birch_log
+  - jungle_log
+  - acacia_log
+  - dark_oak_log
+  - mangrove_log
+  - cherry_log
+  - apple
+  - stick
+tiers:
+  small:
+    display: "Small"
+    capacity: 2240
+  medium:
+    display: "Medium"
+    capacity: 20160
+    cost:
+      coins: 250000
+  large:
+    display: "Large"
+    capacity: 60480
+    cost:
+      coins: 1500000

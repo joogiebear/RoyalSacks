@@ -1,0 +1,26 @@
+display: "&bFishing Sack"
+icon: fishing_rod
+items:
+  - cod
+  - salmon
+  - tropical_fish
+  - pufferfish
+  - ink_sac
+  - prismarine_shard
+  - prismarine_crystals
+  - lily_pad
+  - sponge
+tiers:
+  small:
+    display: "Small"
+    capacity: 2240
+  medium:
+    display: "Medium"
+    capacity: 20160
+    cost:
+      coins: 250000
+  large:
+    display: "Large"
+    capacity: 60480
+    cost:
+      coins: 1500000
