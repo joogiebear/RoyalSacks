@@ -1,0 +1,34 @@
+# One sack per file; the file name is the sack's id. Items are vanilla names (wheat) or eco ids
+# (ecoitems:enchanted_wheat). Each item may be in one sack only.
+display: "&aAgronomy Sack"
+icon: wheat
+items:
+  - wheat
+  - carrot
+  - potato
+  - beetroot
+  - pumpkin
+  - melon_slice
+  - sugar_cane
+  - cactus
+  - cocoa_beans
+  - nether_wart
+  - red_mushroom
+  - brown_mushroom
+  - wheat_seeds
+# Sizes, smallest first. Each holds 'capacity' of every item. A first size with no cost is free for everyone.
+# cost.items: "<item> <amount>", taken from the player's inventory.
+tiers:
+  small:
+    display: "Small"
+    capacity: 2240
+  medium:
+    display: "Medium"
+    capacity: 20160
+    cost:
+      coins: 250000
+  large:
+    display: "Large"
+    capacity: 60480
+    cost:
+      coins: 1500000

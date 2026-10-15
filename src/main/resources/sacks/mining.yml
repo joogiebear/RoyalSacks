@@ -1,0 +1,35 @@
+display: "&7Mining Sack"
+icon: iron_pickaxe
+items:
+  - cobblestone
+  - stone
+  - coal
+  - raw_iron
+  - raw_gold
+  - raw_copper
+  - diamond
+  - emerald
+  - lapis_lazuli
+  - redstone
+  - quartz
+  - obsidian
+  - gravel
+  - flint
+  - sand
+  - netherrack
+  - end_stone
+  - glowstone_dust
+tiers:
+  small:
+    display: "Small"
+    capacity: 2240
+  medium:
+    display: "Medium"
+    capacity: 20160
+    cost:
+      coins: 250000
+  large:
+    display: "Large"
+    capacity: 60480
+    cost:
+      coins: 1500000

@@ -1,0 +1,28 @@
+display: "&cCombat Sack"
+icon: iron_sword
+items:
+  - rotten_flesh
+  - bone
+  - string
+  - spider_eye
+  - gunpowder
+  - ender_pearl
+  - blaze_rod
+  - ghast_tear
+  - slime_ball
+  - magma_cream
+  - phantom_membrane
+tiers:
+  small:
+    display: "Small"
+    capacity: 2240
+  medium:
+    display: "Medium"
+    capacity: 20160
+    cost:
+      coins: 250000
+  large:
+    display: "Large"
+    capacity: 60480
+    cost:
+      coins: 1500000

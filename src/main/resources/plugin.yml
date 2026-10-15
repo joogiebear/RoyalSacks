@@ -1,0 +1,30 @@
+name: RoyalSacks
+version: ${version}
+main: com.mystipixel.royalsacks.RoyalSacksPlugin
+api-version: '26.2'
+author: Mystipixel
+description: Hypixel-style sacks, per-profile material storage that items go into when picked up.
+# JDBC driver + connection pool are downloaded at runtime by Paper's library loader.
+# Keep these versions identical to the matching dependencies in pom.xml.
+libraries:
+  - org.xerial:sqlite-jdbc:3.53.4.0
+  - com.zaxxer:HikariCP:7.1.0
+  - com.mysql:mysql-connector-j:26.7.0
+softdepend:
+  - eco
+  - EcoItems
+  - Vault
+  - PlaceholderAPI
+  - RoyalSkyblock
+commands:
+  sacks:
+    description: Open your sacks.
+    usage: /sacks [pickup [on|off]|reload|admin <give|take|view> <player> [item] [amount]]
+    aliases: [sack]
+permissions:
+  royalsacks.use:
+    description: Open and use sacks.
+    default: true
+  royalsacks.admin:
+    description: Reload RoyalSacks and change other players' sacks.
+    default: op

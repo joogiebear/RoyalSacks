@@ -1,0 +1,84 @@
+# Sacks menus. & colour codes. Slots count from 0 (top left) to rows*9-1.
+# A button with a negative slot is hidden.
+
+main:
+  title: "&8Your Sacks"
+  rows: 4
+  filler: gray_stained_glass_pane
+  # where the sacks go, in the order of the files in sacks/ (sorted by name)
+  sack-slots: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25]
+  sack-icon:
+    name: "{sack}"
+    lore:
+      - "&7Size: &e{tier}"
+      - "&7Stored: &e{stored} &7items"
+      - "&7Holds &e{capacity} &7of each item"
+      - ""
+      - "&eClick to open"
+    locked-lore:
+      - "&cNot unlocked yet"
+      - ""
+      - "&eClick to open"
+  pickup-on:
+    slot: 30
+    material: hopper
+    name: "&aAuto-pickup: ON"
+    lore: ["&7Picked-up items go into your sacks.", "", "&eClick to turn off"]
+  pickup-off:
+    slot: 30
+    material: hopper
+    name: "&cAuto-pickup: OFF"
+    lore: ["&7Picked-up items stay in your inventory.", "", "&eClick to turn on"]
+  close:
+    slot: 32
+    material: barrier
+    name: "&cClose"
+
+# shown as the size of a sack that isn't unlocked
+locked-tier: "&cLocked"
+
+sack:
+  title: "&8{sack}"
+  rows: 6
+  filler: gray_stained_glass_pane
+  item-slots: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43]
+  item:
+    name: "{item}"
+    lore:
+      - "&7Stored: &e{amount}&7/&e{capacity}"
+      - ""
+      - "&eLeft-click: take a stack"
+      - "&eRight-click: fill your inventory"
+  upgrade:
+    slot: 49
+    material: chest
+    name: "&aUpgrade to {tier}"
+    lore:
+      - "&7Holds &e{capacity} &7of each item."
+      - ""
+      - "&7Cost:"
+      - "{cost}"
+      - ""
+      - "&eClick to buy"
+  upgrade-maxed:
+    slot: 49
+    material: ender_chest
+    name: "&aLargest size"
+    lore: ["&7This sack can't be upgraded further."]
+  previous-page:
+    slot: 48
+    material: arrow
+    name: "&7Previous page"
+  next-page:
+    slot: 50
+    material: arrow
+    name: "&7Next page"
+  back:
+    slot: 45
+    material: arrow
+    name: "&7Back to sacks"
+
+# lines for the {cost} of an upgrade
+cost-coins: "&8- &6{cost}"
+cost-item: "&8- &e{amount}x &f{item}"
+cost-free: "&8- &aFree"
