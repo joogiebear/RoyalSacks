@@ -1,0 +1,26 @@
+{
+  "name": "RoyalSacks: server B sees what alice did on server A, and withdraws from it",
+  "instance": "sacks-b",
+  "bots": ["alice"],
+  "setup": ["op alice", "clear alice"],
+  "steps": [
+    { "bot": "alice", "command": "/papi parse me %royalsacks_amount_wheat%" },
+    { "bot": "alice", "expectMessage": "/^2176$/" },
+    { "bot": "alice", "command": "/papi parse me %royalsacks_tier_agronomy% %royalsacks_capacity_wheat% %royalsacks_pickup%" },
+    { "bot": "alice", "expectMessage": "/^2 20160 false$/" },
+    { "bot": "alice", "command": "/sacks" },
+    { "bot": "alice", "waitWindow": "/.*/" },
+    { "bot": "alice", "click": 10 },
+    { "bot": "alice", "chat": "opened agronomy" },
+    { "bot": "alice", "expectMessage": "/opened agronomy/" },
+    { "bot": "alice", "waitWindow": "/.*/" },
+    { "bot": "alice", "click": 10, "button": "right" },
+    { "bot": "alice", "expectMessage": "/Took 2,176x Wheat from your sacks/" },
+    { "bot": "alice", "expectItem": { "name": "wheat", "count": 2176 } },
+    { "bot": "alice", "click": 10 },
+    { "bot": "alice", "expectMessage": "/slot is empty/" },
+    { "bot": "alice", "closeWindow": true },
+    { "bot": "alice", "leave": true },
+    { "expectLog": { "absent": "/Exception|SEVERE|ERROR\\]: \\[RoyalSacks/" } }
+  ]
+}

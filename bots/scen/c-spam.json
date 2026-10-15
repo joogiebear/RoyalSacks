@@ -1,0 +1,31 @@
+{
+  "name": "RoyalSacks: rapid withdraw clicks never hand out more than the sack held",
+  "instance": "sacks-a",
+  "bots": ["alice"],
+  "setup": ["clear alice"],
+  "steps": [
+    { "bot": "alice", "command": "/sacks admin give alice wheat 100" },
+    { "bot": "alice", "expectMessage": "/Gave 100x wheat/" },
+    { "bot": "alice", "command": "/sacks" },
+    { "bot": "alice", "waitWindow": "/.*/" },
+    { "bot": "alice", "click": 10 },
+    { "bot": "alice", "chat": "opened agronomy" },
+    { "bot": "alice", "expectMessage": "/opened agronomy/" },
+    { "bot": "alice", "waitWindow": "/.*/" },
+    { "bot": "alice", "click": 10 },
+    { "bot": "alice", "click": 10 },
+    { "bot": "alice", "click": 10, "button": "right" },
+    { "bot": "alice", "click": 10, "button": "right" },
+    { "bot": "alice", "click": 10 },
+    { "bot": "alice", "expectMessage": "/Took \\d+x Wheat/" },
+    { "bot": "alice", "chat": "clicked" },
+    { "bot": "alice", "expectMessage": "/clicked/" },
+    { "bot": "alice", "closeWindow": true },
+    { "bot": "alice", "command": "/papi parse me %royalsacks_amount_wheat%" },
+    { "bot": "alice", "expectMessage": "/^36$/" },
+    { "bot": "alice", "command": "/minecraft:clear alice minecraft:wheat 0" },
+    { "bot": "alice", "expectMessage": "/Found 64 matching/" },
+    { "bot": "alice", "leave": true },
+    { "expectLog": { "absent": "/Exception|SEVERE|ERROR\\]: \\[RoyalSacks/" } }
+  ]
+}
