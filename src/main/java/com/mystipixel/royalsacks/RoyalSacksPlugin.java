@@ -77,7 +77,13 @@ public final class RoyalSacksPlugin extends JavaPlugin {
         }
         this.service = new SackService(db, storage, messages, vault, new SkyblockSave(), getLogger(), () -> scopes);
         this.menu = new SackMenu(service, messages, BundledYaml.load(this, "menus.yml"));
-        reload();
+        // eco plugins register their items after the server finishes starting, so EcoItems ids only resolve
+        // from the first tick on: load quietly now, then again once they exist
+        boolean eco = getServer().getPluginManager().isPluginEnabled("eco");
+        reload(!eco);
+        if (eco) {
+            getServer().getScheduler().runTask(this, () -> reload(true));
+        }
 
         getServer().getPluginManager().registerEvents(new PickupListener(service), this);
         getServer().getPluginManager().registerEvents(new SackMenuListener(this, service, menu), this);
@@ -125,6 +131,10 @@ public final class RoyalSacksPlugin extends JavaPlugin {
 
     /** Re-reads config.yml, messages.yml, menus.yml and sacks/. Storage settings need a restart. */
     public void reload() {
+        reload(true);
+    }
+
+    private void reload(boolean warnUnknownItems) {
         reloadConfig();
         messages.reload();
         this.scopes = new ScopeResolver(getConfig().getString("sacks.scope-placeholder", "%royalskyblock_profile_id%"),
@@ -135,7 +145,7 @@ public final class RoyalSacksPlugin extends JavaPlugin {
             ids.add(SackRegistry.normalize(sack.icon()));
             sack.tiers().forEach(t -> t.items().forEach(cost -> ids.add(cost.itemId())));
         }
-        ItemMatcher matcher = new ItemMatcher(ids, getLogger()::warning);
+        ItemMatcher matcher = new ItemMatcher(ids, warnUnknownItems ? getLogger()::warning : warning -> { });
         ConfigurationSection pickup = getConfig().getConfigurationSection("pickup");
         SackService.Settings settings = new SackService.Settings(
                 pickup == null || pickup.getBoolean("enabled-by-default", true),
