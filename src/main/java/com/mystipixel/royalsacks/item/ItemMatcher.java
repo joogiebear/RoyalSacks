@@ -123,6 +123,10 @@ public final class ItemMatcher {
             if (meta != null && meta.hasDisplayName()) {
                 return LegacyComponentSerializer.legacyAmpersand().serialize(meta.displayName());
             }
+            // EcoItems names its items with the item_name component, not a custom display name
+            if (meta != null && meta.hasItemName()) {
+                return LegacyComponentSerializer.legacyAmpersand().serialize(meta.itemName());
+            }
             return titleCase(test.getItem().getType().name());
         }
         return id;
