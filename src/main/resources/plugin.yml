@@ -16,6 +16,7 @@ softdepend:
   - Vault
   - PlaceholderAPI
   - RoyalSkyblock
+  - RoyalItems
 commands:
   sacks:
     description: Open your sacks.

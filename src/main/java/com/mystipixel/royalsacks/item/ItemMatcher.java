@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 /**
  * Turns item stacks into sack item ids and back. Vanilla ids ({@code wheat}) match plain stacks of that
@@ -37,8 +38,18 @@ public final class ItemMatcher {
     private final Map<Material, List<Custom>> custom = new EnumMap<>(Material.class);
     private final Map<String, TestableItem> customById = new HashMap<>();
     private final int unknown;
+    private final UnaryOperator<ItemStack> dress;
 
     public ItemMatcher(Collection<String> ids, Consumer<String> warn) {
+        this(ids, warn, UnaryOperator.identity());
+    }
+
+    /**
+     * {@code dress} turns a plain vanilla stack into the form another plugin (RoyalItems) gives every drop of
+     * that material; such stacks count as the vanilla item and withdrawals come out dressed the same way.
+     */
+    public ItemMatcher(Collection<String> ids, Consumer<String> warn, UnaryOperator<ItemStack> dress) {
+        this.dress = dress;
         this.eco = Bukkit.getPluginManager().isPluginEnabled("eco");
         List<String> unknown = new ArrayList<>();
         for (String id : ids) {
@@ -84,10 +95,16 @@ public final class ItemMatcher {
             }
         }
         String id = vanilla.get(stack.getType());
-        if (id != null && isPlain(stack) && !isEcoItem(stack)) {
+        if (id != null && (isPlain(stack) || isDressed(stack)) && !isEcoItem(stack)) {
             return id;
         }
         return null;
+    }
+
+    // exactly the dressing of the plain material, nothing else added (a renamed or enchanted stack isn't)
+    private boolean isDressed(ItemStack stack) {
+        ItemStack dressed = dress.apply(new ItemStack(stack.getType()));
+        return dressed != null && dressed.hasItemMeta() && stack.isSimilar(dressed);
     }
 
     public boolean matches(String id, ItemStack stack) {
@@ -99,7 +116,10 @@ public final class ItemMatcher {
         Material material = vanillaById.get(id);
         ItemStack item;
         if (material != null) {
-            item = new ItemStack(material);
+            item = dress.apply(new ItemStack(material));
+            if (item == null) {
+                item = new ItemStack(material);
+            }
         } else {
             TestableItem test = customById.get(id);
             if (test == null) {

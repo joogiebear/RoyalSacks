@@ -33,7 +33,8 @@ Requires Paper 26.2 or newer (Java 25).
   it by granting the permission. What a player already stored stays in the database.
 
 Items are matched like RoyalBazaar matches them: `wheat` is a plain vanilla wheat stack (no name, lore,
-enchantments or plugin data), and anything with a namespace (`ecoitems:enchanted_wheat`) is an eco item.
+enchantments or plugin data), and anything with a namespace (`ecoitems:enchanted_wheat`) is an eco item. With
+RoyalItems installed, its dressed vanilla drops count as the plain item, and withdrawals come out dressed.
 
 ## Commands
 
@@ -81,6 +82,8 @@ SQLite by default, or MySQL. Several servers can share one MySQL database:
 can call them by reflection:
 
 - `int deposit(Player, ItemStack)`: stores as much of the stack as fits and returns how many went in.
+- `int pickup(Player, ItemStack)`: the same, but only when the player has auto-pickup on, with the action bar.
+  RoyalMinions uses it when a player collects from a minion.
 - `long amount(Player, String itemId)`: what the player's current sacks hold, or -1 if not loaded.
 - `String itemId(ItemStack)`: the sack item id a stack counts as, or null.
 
