@@ -1,3 +1,8 @@
+## 2026.42.2 - 2026-10-15
+
+### Fixes
+- store RoyalItems-dressed vanilla drops and add a pickup API for collected items (`06c10bb`)
+
 ## 2026.42.1 - 2026-10-15
 
 ### Features
