@@ -1,3 +1,14 @@
+## 2026.42.1 - 2026-10-15
+
+### Features
+- lock sacks behind an optional permission (`1f3d28f`)
+- enchanted EcoItems forms in the bundled sacks (`b2d23c0`)
+
+### Fixes
+- show EcoItems item names in sack messages and menus (`b37c0c7`)
+- retry EcoItems ids until eco has registered its items (`1339d93`)
+- resolve EcoItems ids once eco has loaded its items (`9c9c2b7`)
+
 ## 2026.42.0 - 2026-10-15
 
 ### Features
