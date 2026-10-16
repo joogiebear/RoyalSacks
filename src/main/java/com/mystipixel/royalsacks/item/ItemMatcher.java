@@ -36,6 +36,7 @@ public final class ItemMatcher {
     private final Map<String, Material> vanillaById = new HashMap<>();
     private final Map<Material, List<Custom>> custom = new EnumMap<>(Material.class);
     private final Map<String, TestableItem> customById = new HashMap<>();
+    private final int unknown;
 
     public ItemMatcher(Collection<String> ids, Consumer<String> warn) {
         this.eco = Bukkit.getPluginManager().isPluginEnabled("eco");
@@ -56,11 +57,17 @@ public final class ItemMatcher {
             customById.put(id, test);
             custom.computeIfAbsent(sample.getType(), m -> new ArrayList<>()).add(new Custom(id, test));
         }
+        this.unknown = unknown.size();
         if (!unknown.isEmpty()) {
             // one line, not one per item: the bundled sacks list every EcoItems enchanted item
             warn.accept(unknown.size() + " sack item(s) don't exist on this server"
                     + (eco ? "" : " (eco is not installed)") + " and won't be stored: " + String.join(", ", unknown));
         }
+    }
+
+    /** How many of the ids given didn't resolve to an item. */
+    public int unknownCount() {
+        return unknown;
     }
 
     /** The sack item id {@code stack} counts as, or null when no sack holds it. Cheap for unrelated stacks. */

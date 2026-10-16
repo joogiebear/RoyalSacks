@@ -103,6 +103,10 @@ public final class SackService {
         return matcher;
     }
 
+    public Settings settings() {
+        return settings;
+    }
+
     public VaultHook vault() {
         return vault;
     }
