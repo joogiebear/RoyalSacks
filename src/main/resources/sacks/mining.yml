@@ -19,6 +19,32 @@ items:
   - netherrack
   - end_stone
   - glowstone_dust
+  # enchanted forms (EcoItems); skipped with a warning when not installed
+  - ecoitems:enchanted_cobblestone
+  - ecoitems:enchanted_stone
+  - ecoitems:enchanted_coal
+  - ecoitems:enchanted_coal_block
+  - ecoitems:enchanted_iron_ingot
+  - ecoitems:enchanted_iron_block
+  - ecoitems:enchanted_gold_ingot
+  - ecoitems:enchanted_gold_block
+  - ecoitems:enchanted_diamond
+  - ecoitems:enchanted_diamond_block
+  - ecoitems:enchanted_emerald
+  - ecoitems:enchanted_emerald_block
+  - ecoitems:enchanted_lapis_lazuli
+  - ecoitems:enchanted_lapis_lazuli_block
+  - ecoitems:enchanted_redstone_dust
+  - ecoitems:enchanted_redstone_block
+  - ecoitems:enchanted_quartz
+  - ecoitems:enchanted_quartz_block
+  - ecoitems:enchanted_obsidian
+  - ecoitems:enchanted_gravel
+  - ecoitems:enchanted_flint
+  - ecoitems:enchanted_sand
+  - ecoitems:enchanted_netherrack
+  - ecoitems:enchanted_end_stone
+  - ecoitems:enchanted_glowstone_dust
 tiers:
   small:
     display: "Small"

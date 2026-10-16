@@ -39,6 +39,7 @@ public final class ItemMatcher {
 
     public ItemMatcher(Collection<String> ids, Consumer<String> warn) {
         this.eco = Bukkit.getPluginManager().isPluginEnabled("eco");
+        List<String> unknown = new ArrayList<>();
         for (String id : ids) {
             Material material = vanillaMaterial(id);
             if (material != null) {
@@ -49,11 +50,16 @@ public final class ItemMatcher {
             TestableItem test = eco ? lookup(id) : null;
             ItemStack sample = test == null ? null : test.getItem();
             if (sample == null || sample.getType().isAir()) {
-                warn.accept("Unknown item '" + id + "'" + (eco ? "" : " (eco is not installed)") + "; it won't be stored.");
+                unknown.add(id);
                 continue;
             }
             customById.put(id, test);
             custom.computeIfAbsent(sample.getType(), m -> new ArrayList<>()).add(new Custom(id, test));
+        }
+        if (!unknown.isEmpty()) {
+            // one line, not one per item: the bundled sacks list every EcoItems enchanted item
+            warn.accept(unknown.size() + " sack item(s) don't exist on this server"
+                    + (eco ? "" : " (eco is not installed)") + " and won't be stored: " + String.join(", ", unknown));
         }
     }
 

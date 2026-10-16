@@ -4,6 +4,7 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -108,5 +109,15 @@ class SackRegistryTest {
         assertEquals(12, state.total(sack));
         state.add("stone", -12);
         assertEquals(0, state.amount("stone"));
+    }
+
+    @Test
+    void bundledSacksLoadCleanlyWithEnchantedForms() {
+        List<String> warnings = new ArrayList<>();
+        SackRegistry registry = SackRegistry.load(new File("src/main/resources/sacks"), warnings::add);
+        assertTrue(warnings.isEmpty(), "an item listed in two bundled sacks: " + warnings);
+        assertEquals(5, registry.all().size());
+        assertEquals("mining", registry.sackOf("ecoitems:enchanted_cobblestone").id());
+        assertSame(registry.sackOf("wheat"), registry.sackOf("ecoitems:enchanted_hay_bale"));
     }
 }

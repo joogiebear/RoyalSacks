@@ -10,6 +10,15 @@ items:
   - prismarine_crystals
   - lily_pad
   - sponge
+  # enchanted forms (EcoItems); skipped with a warning when not installed
+  - ecoitems:enchanted_cod
+  - ecoitems:enchanted_salmon
+  - ecoitems:enchanted_tropical_fish
+  - ecoitems:enchanted_pufferfish
+  - ecoitems:enchanted_prismarine_shard
+  - ecoitems:enchanted_prismarine_crystals
+  - ecoitems:enchanted_lily_pad
+  - ecoitems:enchanted_sponge
 tiers:
   small:
     display: "Small"

@@ -16,6 +16,22 @@ items:
   - red_mushroom
   - brown_mushroom
   - wheat_seeds
+  # enchanted forms (EcoItems); skipped with a warning when not installed
+  - ecoitems:enchanted_wheat
+  - ecoitems:enchanted_hay_bale
+  - ecoitems:enchanted_carrot
+  - ecoitems:enchanted_potato
+  - ecoitems:enchanted_beetroot
+  - ecoitems:enchanted_pumpkin
+  - ecoitems:enchanted_melon
+  - ecoitems:enchanted_sugar_cane
+  - ecoitems:enchanted_cactus
+  - ecoitems:enchanted_cocoa_beans
+  - ecoitems:enchanted_nether_wart
+  - ecoitems:enchanted_red_mushroom
+  - ecoitems:enchanted_red_mushroom_block
+  - ecoitems:enchanted_brown_mushroom
+  - ecoitems:enchanted_brown_mushroom_block
 # Sizes, smallest first. Each holds 'capacity' of every item. A first size with no cost is free for everyone.
 # cost.items: "<item> <amount>", taken from the player's inventory.
 tiers:
