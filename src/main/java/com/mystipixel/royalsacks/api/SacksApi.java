@@ -46,6 +46,19 @@ public final class SacksApi {
         return itemId == null ? 0 : s.deposit(player, itemId, stack.getAmount(), false);
     }
 
+    /**
+     * As {@link #deposit}, but only when the player has auto-pickup on, and with the usual action bar and
+     * full-sack warning: for items a player collects (from a minion, a chest...) rather than gets from a plugin.
+     */
+    public static int pickup(Player player, ItemStack stack) {
+        SackService s = service;
+        if (s == null || stack == null) {
+            return 0;
+        }
+        String itemId = s.matcher().idOf(stack);
+        return itemId == null ? 0 : s.pickup(player, itemId, stack.getAmount());
+    }
+
     /** How many of a sack item id the player holds in their current sacks, or -1 when not known yet. */
     public static long amount(Player player, String itemId) {
         SackService s = service;

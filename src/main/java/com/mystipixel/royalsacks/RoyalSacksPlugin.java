@@ -8,6 +8,7 @@ import com.mystipixel.royalsacks.gui.SackHolder;
 import com.mystipixel.royalsacks.gui.SackMenu;
 import com.mystipixel.royalsacks.gui.SackMenuListener;
 import com.mystipixel.royalsacks.hooks.SacksExpansion;
+import com.mystipixel.royalsacks.hooks.RoyalItemsBridge;
 import com.mystipixel.royalsacks.hooks.SkyblockSave;
 import com.mystipixel.royalsacks.hooks.VaultHook;
 import com.mystipixel.royalsacks.item.ItemMatcher;
@@ -48,6 +49,7 @@ public final class RoyalSacksPlugin extends JavaPlugin {
     private SackMenu menu;
     private BukkitTask flushTask;
     private Set<String> itemIds = Set.of();
+    private final RoyalItemsBridge royalItems = new RoyalItemsBridge();
     // typed as Object so this class loads without PlaceholderAPI
     private Object expansion;
 
@@ -143,13 +145,13 @@ public final class RoyalSacksPlugin extends JavaPlugin {
         if (!isEnabled()) {
             return;
         }
-        ItemMatcher quiet = new ItemMatcher(itemIds, warning -> { });
+        ItemMatcher quiet = new ItemMatcher(itemIds, warning -> { }, royalItems);
         boolean settled = quiet.unknownCount() == 0 || quiet.unknownCount() < unknownBefore || attempt >= ITEM_RETRIES;
         if (!settled) {
             getServer().getScheduler().runTaskLater(this, () -> resolveItems(attempt + 1, unknownBefore), 20L);
             return;
         }
-        ItemMatcher matcher = quiet.unknownCount() == 0 ? quiet : new ItemMatcher(itemIds, getLogger()::warning);
+        ItemMatcher matcher = quiet.unknownCount() == 0 ? quiet : new ItemMatcher(itemIds, getLogger()::warning, royalItems);
         service.configure(service.registry(), matcher, service.settings());
     }
 
@@ -165,7 +167,7 @@ public final class RoyalSacksPlugin extends JavaPlugin {
             sack.tiers().forEach(t -> t.items().forEach(cost -> ids.add(cost.itemId())));
         }
         this.itemIds = ids;
-        ItemMatcher matcher = new ItemMatcher(ids, warnUnknownItems ? getLogger()::warning : warning -> { });
+        ItemMatcher matcher = new ItemMatcher(ids, warnUnknownItems ? getLogger()::warning : warning -> { }, royalItems);
         ConfigurationSection pickup = getConfig().getConfigurationSection("pickup");
         SackService.Settings settings = new SackService.Settings(
                 pickup == null || pickup.getBoolean("enabled-by-default", true),
