@@ -1,4 +1,6 @@
 display: "&bFishing Sack"
+# Uncomment to lock this sack until another plugin (quests, collections, ranks) grants the permission.
+# permission: royalsacks.sack.fishing
 icon: fishing_rod
 items:
   - cod

@@ -1,12 +1,16 @@
 package com.mystipixel.royalsacks.sack;
 
+import org.bukkit.permissions.Permissible;
+
 import java.util.List;
 
 /**
  * One sack from {@code sacks/<id>.yml}: the items it holds and the capacity tiers a player buys in order.
- * Tier 0 means not unlocked; tier {@code n} is {@code tiers.get(n - 1)}.
+ * Tier 0 means not unlocked; tier {@code n} is {@code tiers.get(n - 1)}. A sack with a {@code permission} is
+ * closed to players without it (granted by quests, collections, ranks...): nothing goes in or comes out.
  */
-public record SackDefinition(String id, String display, String icon, List<String> items, List<Tier> tiers) {
+public record SackDefinition(String id, String display, String icon, List<String> items, List<Tier> tiers,
+                             String permission) {
 
     public record ItemCost(String itemId, int amount) {
     }
@@ -25,6 +29,16 @@ public record SackDefinition(String id, String display, String icon, List<String
     public SackDefinition {
         items = List.copyOf(items);
         tiers = List.copyOf(tiers);
+        permission = permission == null || permission.isBlank() ? null : permission.trim();
+    }
+
+    public SackDefinition(String id, String display, String icon, List<String> items, List<Tier> tiers) {
+        this(id, display, icon, items, tiers, null);
+    }
+
+    /** Whether {@code who} may use this sack. */
+    public boolean usableBy(Permissible who) {
+        return permission == null || who.hasPermission(permission);
     }
 
     /** The tier a player has, given the tier stored for them: a first tier that costs nothing is free for everyone. */

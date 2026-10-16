@@ -104,8 +104,9 @@ public final class SackMenu {
                     "stored", String.format("%,d", state.total(sack)),
                     "capacity", String.format("%,d", sack.capacity(tier)));
             ItemStack icon = icon(sack.icon());
-            decorate(icon, cfg.getString("sack-icon.name", "{sack}"),
-                    cfg.getStringList(tier == 0 ? "sack-icon.locked-lore" : "sack-icon.lore"), values);
+            String lore = !sack.usableBy(player) ? "sack-icon.no-permission-lore"
+                    : tier == 0 ? "sack-icon.locked-lore" : "sack-icon.lore";
+            decorate(icon, cfg.getString("sack-icon.name", "{sack}"), cfg.getStringList(lore), values);
             int slot = slots.get(i++);
             inv.setItem(slot, icon);
             holder.bind(slot, new SackHolder.Open(sack.id()));
@@ -119,6 +120,11 @@ public final class SackMenu {
     private void showSack(Player player, SackKey key, SackState state, String sackId, int page) {
         SackDefinition sack = service.registry().get(sackId);
         if (sack == null) {
+            showMain(player, key, state);
+            return;
+        }
+        if (!sack.usableBy(player)) {
+            messages.send(player, "sack-locked", Map.of("sack", sack.display()));
             showMain(player, key, state);
             return;
         }

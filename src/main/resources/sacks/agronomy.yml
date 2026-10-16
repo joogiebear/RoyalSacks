@@ -1,6 +1,8 @@
 # One sack per file; the file name is the sack's id. Items are vanilla names (wheat) or eco ids
 # (ecoitems:enchanted_wheat). Each item may be in one sack only.
 display: "&aAgronomy Sack"
+# Uncomment to lock this sack until another plugin (quests, collections, ranks) grants the permission.
+# permission: royalsacks.sack.agronomy
 icon: wheat
 items:
   - wheat

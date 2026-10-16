@@ -1,4 +1,6 @@
 display: "&cCombat Sack"
+# Uncomment to lock this sack until another plugin (quests, collections, ranks) grants the permission.
+# permission: royalsacks.sack.combat
 icon: iron_sword
 items:
   - rotten_flesh

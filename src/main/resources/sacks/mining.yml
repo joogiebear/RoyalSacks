@@ -1,4 +1,6 @@
 display: "&7Mining Sack"
+# Uncomment to lock this sack until another plugin (quests, collections, ranks) grants the permission.
+# permission: royalsacks.sack.mining
 icon: iron_pickaxe
 items:
   - cobblestone

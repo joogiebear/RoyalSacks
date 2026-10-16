@@ -120,4 +120,15 @@ class SackRegistryTest {
         assertEquals("mining", registry.sackOf("ecoitems:enchanted_cobblestone").id());
         assertSame(registry.sackOf("wheat"), registry.sackOf("ecoitems:enchanted_hay_bale"));
     }
+
+    @Test
+    void readsAnOptionalPermission() throws Exception {
+        List<String> warnings = new ArrayList<>();
+        String tiers = "tiers:\n  small: { capacity: 10 }\n";
+        assertEquals("royalsacks.sack.mining",
+                parse("mining", "items: [stone]\npermission: ' royalsacks.sack.mining '\n" + tiers, warnings).permission());
+        assertNull(parse("open", "items: [stone]\n" + tiers, warnings).permission());
+        assertNull(parse("blank", "items: [stone]\npermission: ''\n" + tiers, warnings).permission());
+        assertTrue(warnings.isEmpty(), warnings.toString());
+    }
 }

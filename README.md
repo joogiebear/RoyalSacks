@@ -28,6 +28,10 @@ Requires Paper 26.2 or newer (Java 25).
   RoyalMinions compactors make. Ids that don't exist on the server are skipped with one startup warning.
   Existing installs keep their `sacks/` files: copy the new lines in, or delete the folder to get the defaults.
 
+- **Locked sacks.** A sack file can set `permission: royalsacks.sack.mining`. Players without it can't
+  open, fill or empty that sack (the menu shows it as locked), so quests, collections or ranks can unlock
+  it by granting the permission. What a player already stored stays in the database.
+
 Items are matched like RoyalBazaar matches them: `wheat` is a plain vanilla wheat stack (no name, lore,
 enchantments or plugin data), and anything with a namespace (`ecoitems:enchanted_wheat`) is an eco item.
 

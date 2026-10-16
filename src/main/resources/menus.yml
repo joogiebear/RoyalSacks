@@ -19,6 +19,10 @@ main:
       - "&cNot unlocked yet"
       - ""
       - "&eClick to open"
+    # shown instead when the sack has a permission the player lacks
+    no-permission-lore:
+      - "&cLocked"
+      - "&7Unlock it to start filling it."
   pickup-on:
     slot: 30
     material: hopper

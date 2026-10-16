@@ -1,4 +1,6 @@
 display: "&2Foraging Sack"
+# Uncomment to lock this sack until another plugin (quests, collections, ranks) grants the permission.
+# permission: royalsacks.sack.foraging
 icon: oak_log
 items:
   - oak_log
