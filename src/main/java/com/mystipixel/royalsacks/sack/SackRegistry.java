@@ -62,7 +62,7 @@ public final class SackRegistry {
                 }
                 kept.add(item);
             }
-            sacks.put(sack.id(), new SackDefinition(sack.id(), sack.display(), sack.icon(), kept, sack.tiers()));
+            sacks.put(sack.id(), new SackDefinition(sack.id(), sack.display(), sack.icon(), kept, sack.tiers(), sack.permission()));
         }
         // byItem must point at the stored copies, whose item lists are the deduplicated ones
         byItem.replaceAll((item, sack) -> sacks.get(sack.id()));
@@ -104,7 +104,8 @@ public final class SackRegistry {
             warn.accept("Sack '" + id + "' has no tiers; skipped.");
             return null;
         }
-        return new SackDefinition(id, yaml.getString("display", id), yaml.getString("icon", items.get(0)), items, tiers);
+        return new SackDefinition(id, yaml.getString("display", id), yaml.getString("icon", items.get(0)), items, tiers,
+                yaml.getString("permission"));
     }
 
     // "ecoitems:enchanted_leather 64" -> (ecoitems:enchanted_leather, 64)

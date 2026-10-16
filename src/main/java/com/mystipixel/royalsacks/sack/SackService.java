@@ -103,6 +103,10 @@ public final class SackService {
         return matcher;
     }
 
+    public Settings settings() {
+        return settings;
+    }
+
     public VaultHook vault() {
         return vault;
     }
@@ -227,7 +231,7 @@ public final class SackService {
     /** As {@link #pickup}, for other plugins, regardless of the player's pickup setting. */
     public int deposit(Player player, String itemId, int amount, boolean notify) {
         SackDefinition sack = registry.sackOf(itemId);
-        if (sack == null || amount <= 0) {
+        if (sack == null || amount <= 0 || !sack.usableBy(player)) {
             return 0;
         }
         SackKey key = keyFor(player);
@@ -314,6 +318,11 @@ public final class SackService {
         SackState state = key == null ? null : states.get(key);
         if (state == null) {
             messages.send(player, key == null ? "no-profile" : "loading");
+            return;
+        }
+        SackDefinition owner = registry.sackOf(itemId);
+        if (owner != null && !owner.usableBy(player)) {
+            messages.send(player, "sack-locked", Map.of("sack", owner.display()));
             return;
         }
         long stored = state.amount(itemId);
@@ -417,6 +426,10 @@ public final class SackService {
         SackState state = key == null ? null : states.get(key);
         if (sack == null || state == null) {
             messages.send(player, key == null ? "no-profile" : "loading");
+            return;
+        }
+        if (!sack.usableBy(player)) {
+            messages.send(player, "sack-locked", Map.of("sack", sack.display()));
             return;
         }
         int stored = state.storedTier(sackId);

@@ -36,9 +36,11 @@ public final class ItemMatcher {
     private final Map<String, Material> vanillaById = new HashMap<>();
     private final Map<Material, List<Custom>> custom = new EnumMap<>(Material.class);
     private final Map<String, TestableItem> customById = new HashMap<>();
+    private final int unknown;
 
     public ItemMatcher(Collection<String> ids, Consumer<String> warn) {
         this.eco = Bukkit.getPluginManager().isPluginEnabled("eco");
+        List<String> unknown = new ArrayList<>();
         for (String id : ids) {
             Material material = vanillaMaterial(id);
             if (material != null) {
@@ -49,12 +51,23 @@ public final class ItemMatcher {
             TestableItem test = eco ? lookup(id) : null;
             ItemStack sample = test == null ? null : test.getItem();
             if (sample == null || sample.getType().isAir()) {
-                warn.accept("Unknown item '" + id + "'" + (eco ? "" : " (eco is not installed)") + "; it won't be stored.");
+                unknown.add(id);
                 continue;
             }
             customById.put(id, test);
             custom.computeIfAbsent(sample.getType(), m -> new ArrayList<>()).add(new Custom(id, test));
         }
+        this.unknown = unknown.size();
+        if (!unknown.isEmpty()) {
+            // one line, not one per item: the bundled sacks list every EcoItems enchanted item
+            warn.accept(unknown.size() + " sack item(s) don't exist on this server"
+                    + (eco ? "" : " (eco is not installed)") + " and won't be stored: " + String.join(", ", unknown));
+        }
+    }
+
+    /** How many of the ids given didn't resolve to an item. */
+    public int unknownCount() {
+        return unknown;
     }
 
     /** The sack item id {@code stack} counts as, or null when no sack holds it. Cheap for unrelated stacks. */
@@ -109,6 +122,10 @@ public final class ItemMatcher {
             ItemMeta meta = test.getItem().getItemMeta();
             if (meta != null && meta.hasDisplayName()) {
                 return LegacyComponentSerializer.legacyAmpersand().serialize(meta.displayName());
+            }
+            // EcoItems names its items with the item_name component, not a custom display name
+            if (meta != null && meta.hasItemName()) {
+                return LegacyComponentSerializer.legacyAmpersand().serialize(meta.itemName());
             }
             return titleCase(test.getItem().getType().name());
         }

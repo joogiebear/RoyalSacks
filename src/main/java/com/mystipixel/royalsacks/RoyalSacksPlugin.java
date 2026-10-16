@@ -47,6 +47,7 @@ public final class RoyalSacksPlugin extends JavaPlugin {
     private SackService service;
     private SackMenu menu;
     private BukkitTask flushTask;
+    private Set<String> itemIds = Set.of();
     // typed as Object so this class loads without PlaceholderAPI
     private Object expansion;
 
@@ -77,7 +78,13 @@ public final class RoyalSacksPlugin extends JavaPlugin {
         }
         this.service = new SackService(db, storage, messages, vault, new SkyblockSave(), getLogger(), () -> scopes);
         this.menu = new SackMenu(service, messages, BundledYaml.load(this, "menus.yml"));
-        reload();
+        // eco plugins register their items a few ticks after the server finishes starting, so EcoItems ids
+        // don't resolve yet: load quietly now, then retry until they appear
+        boolean eco = getServer().getPluginManager().isPluginEnabled("eco");
+        reload(!eco);
+        if (eco && service.matcher().unknownCount() > 0) {
+            getServer().getScheduler().runTaskLater(this, () -> resolveItems(1, service.matcher().unknownCount()), 1L);
+        }
 
         getServer().getPluginManager().registerEvents(new PickupListener(service), this);
         getServer().getPluginManager().registerEvents(new SackMenuListener(this, service, menu), this);
@@ -125,6 +132,28 @@ public final class RoyalSacksPlugin extends JavaPlugin {
 
     /** Re-reads config.yml, messages.yml, menus.yml and sacks/. Storage settings need a restart. */
     public void reload() {
+        reload(true);
+    }
+
+    private static final int ITEM_RETRIES = 30;
+
+    // once a retry resolves more ids than the last, eco has loaded its items; whatever is still unknown is
+    // reported then (or after ITEM_RETRIES seconds if nothing ever resolves)
+    private void resolveItems(int attempt, int unknownBefore) {
+        if (!isEnabled()) {
+            return;
+        }
+        ItemMatcher quiet = new ItemMatcher(itemIds, warning -> { });
+        boolean settled = quiet.unknownCount() == 0 || quiet.unknownCount() < unknownBefore || attempt >= ITEM_RETRIES;
+        if (!settled) {
+            getServer().getScheduler().runTaskLater(this, () -> resolveItems(attempt + 1, unknownBefore), 20L);
+            return;
+        }
+        ItemMatcher matcher = quiet.unknownCount() == 0 ? quiet : new ItemMatcher(itemIds, getLogger()::warning);
+        service.configure(service.registry(), matcher, service.settings());
+    }
+
+    private void reload(boolean warnUnknownItems) {
         reloadConfig();
         messages.reload();
         this.scopes = new ScopeResolver(getConfig().getString("sacks.scope-placeholder", "%royalskyblock_profile_id%"),
@@ -135,7 +164,8 @@ public final class RoyalSacksPlugin extends JavaPlugin {
             ids.add(SackRegistry.normalize(sack.icon()));
             sack.tiers().forEach(t -> t.items().forEach(cost -> ids.add(cost.itemId())));
         }
-        ItemMatcher matcher = new ItemMatcher(ids, getLogger()::warning);
+        this.itemIds = ids;
+        ItemMatcher matcher = new ItemMatcher(ids, warnUnknownItems ? getLogger()::warning : warning -> { });
         ConfigurationSection pickup = getConfig().getConfigurationSection("pickup");
         SackService.Settings settings = new SackService.Settings(
                 pickup == null || pickup.getBoolean("enabled-by-default", true),

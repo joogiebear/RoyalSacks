@@ -104,8 +104,9 @@ public final class SackMenu {
                     "stored", String.format("%,d", state.total(sack)),
                     "capacity", String.format("%,d", sack.capacity(tier)));
             ItemStack icon = icon(sack.icon());
-            decorate(icon, cfg.getString("sack-icon.name", "{sack}"),
-                    cfg.getStringList(tier == 0 ? "sack-icon.locked-lore" : "sack-icon.lore"), values);
+            String lore = !sack.usableBy(player) ? "sack-icon.no-permission-lore"
+                    : tier == 0 ? "sack-icon.locked-lore" : "sack-icon.lore";
+            decorate(icon, cfg.getString("sack-icon.name", "{sack}"), cfg.getStringList(lore), values);
             int slot = slots.get(i++);
             inv.setItem(slot, icon);
             holder.bind(slot, new SackHolder.Open(sack.id()));
@@ -122,18 +123,24 @@ public final class SackMenu {
             showMain(player, key, state);
             return;
         }
+        if (!sack.usableBy(player)) {
+            messages.send(player, "sack-locked", Map.of("sack", sack.display()));
+            showMain(player, key, state);
+            return;
+        }
         ConfigurationSection cfg = section("sack");
         List<Integer> slots = inside(cfg.getIntegerList("item-slots"), Math.max(1, Math.min(6, cfg.getInt("rows", 6))) * 9);
         int perPage = Math.max(1, slots.size());
-        int pages = Math.max(1, (sack.items().size() + perPage - 1) / perPage);
+        // items whose plugin isn't installed (an EcoItems id without EcoItems) leave no gap
+        ItemMatcher matcher = service.matcher();
+        List<String> items = sack.items().stream().filter(matcher::known).toList();
+        int pages = Math.max(1, (items.size() + perPage - 1) / perPage);
         page = Math.max(0, Math.min(page, pages - 1));
         int tier = state.tier(sack);
         long capacity = sack.capacity(tier);
 
         SackHolder holder = new SackHolder(key, sackId, page);
         Inventory inv = create(holder, cfg, Map.of("sack", sack.display()));
-        ItemMatcher matcher = service.matcher();
-        List<String> items = sack.items();
         for (int i = 0; i < perPage && page * perPage + i < items.size(); i++) {
             String itemId = items.get(page * perPage + i);
             ItemStack icon = matcher.create(itemId, 1);

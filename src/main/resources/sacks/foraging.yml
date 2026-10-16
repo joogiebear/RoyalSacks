@@ -1,4 +1,6 @@
 display: "&2Foraging Sack"
+# Uncomment to lock this sack until another plugin (quests, collections, ranks) grants the permission.
+# permission: royalsacks.sack.foraging
 icon: oak_log
 items:
   - oak_log
@@ -11,6 +13,15 @@ items:
   - cherry_log
   - apple
   - stick
+  # enchanted forms (EcoItems); skipped with a warning when not installed
+  - ecoitems:enchanted_oak_log
+  - ecoitems:enchanted_spruce_log
+  - ecoitems:enchanted_birch_log
+  - ecoitems:enchanted_jungle_log
+  - ecoitems:enchanted_acacia_log
+  - ecoitems:enchanted_dark_oak_log
+  - ecoitems:enchanted_mangrove_log
+  - ecoitems:enchanted_cherry_log
 tiers:
   small:
     display: "Small"

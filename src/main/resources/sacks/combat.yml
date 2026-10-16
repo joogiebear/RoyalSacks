@@ -1,4 +1,6 @@
 display: "&cCombat Sack"
+# Uncomment to lock this sack until another plugin (quests, collections, ranks) grants the permission.
+# permission: royalsacks.sack.combat
 icon: iron_sword
 items:
   - rotten_flesh
@@ -12,6 +14,18 @@ items:
   - slime_ball
   - magma_cream
   - phantom_membrane
+  # enchanted forms (EcoItems); skipped with a warning when not installed
+  - ecoitems:enchanted_rotten_flesh
+  - ecoitems:enchanted_bone
+  - ecoitems:enchanted_bone_block
+  - ecoitems:enchanted_string
+  - ecoitems:enchanted_gunpowder
+  - ecoitems:enchanted_ender_pearl
+  - ecoitems:enchanted_blaze_rod
+  - ecoitems:enchanted_ghast_tear
+  - ecoitems:enchanted_slime_ball
+  - ecoitems:enchanted_slime_block
+  - ecoitems:enchanted_magma_cream
 tiers:
   small:
     display: "Small"
