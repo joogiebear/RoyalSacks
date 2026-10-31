@@ -13,7 +13,7 @@ permissions: {}
 jobs:
   title:
     name: Title has a change type
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Check title
         # The title is passed through the environment, never interpolated into the
